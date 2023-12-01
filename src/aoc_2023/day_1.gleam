@@ -78,19 +78,14 @@ fn expand_digits_in_string(line: String) -> String {
   line
   |> string.to_graphemes
   |> list.index_fold(
-    #("", option.None),
+    "",
     fn(acc, el, idx_outer) {
-      case acc.1 {
-        _ -> {
-          case substring_search(line, idx_outer) {
-            #(sd, option.Some(idx)) -> #(acc.0 <> sd, option.Some(idx))
-            _ -> #(acc.0 <> el, option.None)
-          }
-        }
+      case substring_search(line, idx_outer) {
+        #(sd, _) -> acc <> sd
+        _ -> acc <> el
       }
     },
   )
-  |> pair.first
 }
 
 pub fn pt_2(input: String) {
