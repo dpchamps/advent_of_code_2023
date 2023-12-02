@@ -76,6 +76,7 @@ fn substring_search(
 
 fn expand_digits_in_string(line: String) -> String {
   line
+  |> io.debug
   |> string.to_graphemes
   |> list.index_fold(
     "",
@@ -86,6 +87,7 @@ fn expand_digits_in_string(line: String) -> String {
       }
     },
   )
+  |> io.debug
 }
 
 pub fn pt_2(input: String) {
