@@ -77,13 +77,6 @@ fn replace_first(s: String, substring: String, with: String) -> String {
 }
 
 fn iterate_in_circle(lines: List(List(#(Int, Int, x))), source_row, source_col) {
-  let assert Ok(line_len) =
-    list.at(lines, 0)
-    |> result.map(fn(x) {
-      x
-      |> list.length
-    })
-
   iterator.range(-1, 1)
   |> iterator.map(fn(col) {
     iterator.range(-1, 1)
@@ -233,8 +226,9 @@ pub fn pt_1(input: String) {
     let digit_ranges = parse_digits_into_ranges(input)
 
     adjacent_symbols
-    |> list.map(fn(symbol) { select_digits_from_symbol(symbol, digit_ranges) })
-    |> list.flat_map(fn(x) { x })
+    |> list.flat_map(fn(symbol) {
+      select_digits_from_symbol(symbol, digit_ranges)
+    })
     |> dict.from_list
     |> dict.values
     |> int.sum
