@@ -1,5 +1,4 @@
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/string
 import gleam/regex
@@ -45,8 +44,6 @@ fn list_into_pairs(l: List(Int)) {
 fn parse_seeds_into_ranges(seeds: List(Int)) -> iterator.Iterator(Int) {
   seeds
   |> list_into_pairs
-  |> io.debug
-  |> list.sort(fn(a, b) { int.compare(a.0, b.0) })
   |> list.map(fn(range) { #(range.0, range.0 + range.1 - 1) })
   |> list.map(fn(range) { iterator.range(range.0, range.1) })
   |> iterator.from_list
