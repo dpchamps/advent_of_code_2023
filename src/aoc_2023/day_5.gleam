@@ -5,6 +5,7 @@ import gleam/regex
 import gleam/result
 import gleam/option
 import gleam/iterator
+import common
 
 type MapKey =
   #(Int, Int, Int)
@@ -151,17 +152,18 @@ pub fn pt_1(input: String) {
   |> input_to_raw
   |> parse_maps
   |> run_seed_pipeline
-  |> list.fold(999_999_999_999_999, int.min)
+  |> list.fold(common.max_safe_int, int.min)
 }
 
 pub fn pt_2(input: String) {
-  input
-  |> input_to_raw
-  |> parse_maps
-  |> fn(x: #(List(Int), List(List(MapKey)))) {
-    let ranges = parse_seeds_into_ranges(x.0)
-    #(ranges, x.1)
-  }
-  |> run_seed_iterator_pipeline
-  |> iterator.fold(999_999_999_999_999, int.min)
+  todo
+  // input
+  // |> input_to_raw
+  // |> parse_maps
+  // |> fn(x: #(List(Int), List(List(MapKey)))) {
+  //   let ranges = parse_seeds_into_ranges(x.0)
+  //   #(ranges, x.1)
+  // }
+  // |> run_seed_iterator_pipeline
+  // |> iterator.fold(common.max_safe_int, int.min)
 }

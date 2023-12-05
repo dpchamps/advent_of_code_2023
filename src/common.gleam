@@ -14,3 +14,5 @@ pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
     )
   }
 }
+
+pub const max_safe_int = 9_007_199_254_740_991
