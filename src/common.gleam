@@ -27,3 +27,17 @@ pub fn unwrap_panic(x: Result(a, b)) -> a {
     _ -> panic
   }
 }
+
+pub fn pair_of_list(l: List(a)) -> Result(#(a, a), Nil) {
+  case l {
+    [first, second] -> Ok(#(first, second))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn list_into_pairs(l: List(Int)) {
+  case l {
+    [head, next, ..tail] -> [#(head, next), ..list_into_pairs(tail)]
+    _ -> []
+  }
+}
