@@ -16,3 +16,14 @@ pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
 }
 
 pub const max_safe_int = 9_007_199_254_740_991
+
+pub fn identity(x: a) -> a {
+  x
+}
+
+pub fn unwrap_panic(x: Result(a, b)) -> a {
+  case x {
+    Ok(r) -> r
+    _ -> panic
+  }
+}
