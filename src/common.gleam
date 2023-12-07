@@ -1,5 +1,7 @@
 import gleam/dict
 import gleam/result
+import gleam/list
+import gleam/option
 
 pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
   d
@@ -35,9 +37,70 @@ pub fn pair_of_list(l: List(a)) -> Result(#(a, a), Nil) {
   }
 }
 
-pub fn list_into_pairs(l: List(Int)) {
+pub fn list_into_pairs(l: List(a)) {
   case l {
     [head, next, ..tail] -> [#(head, next), ..list_into_pairs(tail)]
     _ -> []
+  }
+}
+
+pub fn list_take_one(l: List(a), f: fn(a) -> Bool) {
+  let reduced =
+    l
+    |> list.index_fold(
+      #([], option.None),
+      fn(acc, x, index) {
+        let #(next_list, stop_searching) = acc
+        case stop_searching {
+          option.Some(i) -> #(
+            next_list
+            |> list.append([x]),
+            option.Some(i),
+          )
+          _ -> {
+            let ignore = f(x)
+            case ignore {
+              False -> #(
+                next_list
+                |> list.append([x]),
+                option.None,
+              )
+              True -> #(next_list, option.Some(index))
+            }
+          }
+        }
+      },
+    )
+
+  case reduced.1 {
+    option.Some(x) -> Ok(#(reduced.0, x))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn list_insert_at(l: List(a), to_insert: a, idx: Int) -> List(a) {
+  let list_len =
+    l
+    |> list.length
+
+  case idx >= list_len {
+    True ->
+      l
+      |> list.append([to_insert])
+    False ->
+      l
+      |> list.index_fold(
+        [],
+        fn(acc, el, index) {
+          case idx - index {
+            0 ->
+              acc
+              |> list.append([to_insert, el])
+            _ ->
+              acc
+              |> list.append([el])
+          }
+        },
+      )
   }
 }
