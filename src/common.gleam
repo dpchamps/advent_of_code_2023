@@ -104,3 +104,30 @@ pub fn list_insert_at(l: List(a), to_insert: a, idx: Int) -> List(a) {
       )
   }
 }
+
+pub fn list_split_on(l: List(a), splitter: fn(a) -> Bool) {
+  l
+  |> list.fold(
+    #([], [], option.None),
+    fn(acc, el) {
+      case acc.1 {
+        [] ->
+          case splitter(el) {
+            True -> #(acc.0, [], option.Some(el))
+            False -> #(
+              acc.0
+              |> list.append([el]),
+              [],
+              option.None,
+            )
+          }
+        _ -> #(
+          acc.0,
+          acc.1
+          |> list.append([el]),
+          acc.2,
+        )
+      }
+    },
+  )
+}

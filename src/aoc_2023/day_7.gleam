@@ -3,6 +3,8 @@ import gleam/list
 import gleam/string
 import common
 import gleam/order
+import gleam/io
+import gleam/option
 
 pub type Card {
   Face(Int)
