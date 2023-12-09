@@ -46,16 +46,13 @@ fn calculate_next(history_line: HistoryLine) -> Int {
   {
     True -> 0
     False -> {
-      let last =
-        differences
-        |> list.last
-        |> common.unwrap_panic
-
-      calculate_next(
+      differences
+      |> list.last
+      |> common.unwrap_panic
+      |> int.add(calculate_next(
         differences
         |> list.window_by_2,
-      )
-      |> int.add(last)
+      ))
     }
   }
 }
