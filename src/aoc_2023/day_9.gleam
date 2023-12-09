@@ -10,33 +10,26 @@ type HistoryLine =
 type Histories =
   List(HistoryLine)
 
-fn parse_history_line(input: String) -> HistoryLine {
-  input
-  |> string.split(" ")
-  |> list.map(int.parse)
-  |> list.map(common.unwrap_panic)
-  |> list.window_by_2
+fn parse_history_line(
+  txfm: fn(List(String)) -> List(String),
+) -> fn(String) -> HistoryLine {
+  fn(input: String) {
+    input
+    |> string.split(" ")
+    |> txfm
+    |> list.map(int.parse)
+    |> list.map(common.unwrap_panic)
+    |> list.window_by_2
+  }
 }
 
-fn parse_history_line_reverse(input: String) -> HistoryLine {
-  input
-  |> string.split(" ")
-  |> list.reverse
-  |> list.map(int.parse)
-  |> list.map(common.unwrap_panic)
-  |> list.window_by_2
-}
-
-fn parse_histories(input: String) -> Histories {
+fn parse_histories(
+  input: String,
+  parser: fn(String) -> HistoryLine,
+) -> Histories {
   input
   |> string.split("\n")
-  |> list.map(parse_history_line)
-}
-
-fn parse_histories_reverse(input: String) -> Histories {
-  input
-  |> string.split("\n")
-  |> list.map(parse_history_line_reverse)
+  |> list.map(parser)
 }
 
 fn difference_of_pair(x: #(Int, Int)) {
@@ -81,14 +74,17 @@ fn get_next_in_sequence(sequence: HistoryLine) -> Int {
 
 pub fn pt_1(input: String) {
   input
-  |> parse_histories
+  |> parse_histories(parse_history_line(common.identity))
   |> list.map(get_next_in_sequence)
   |> int.sum
 }
 
 pub fn pt_2(input: String) {
   input
-  |> parse_histories_reverse
+  |> parse_histories(parse_history_line(fn(x: List(String)) {
+    x
+    |> list.reverse
+  }))
   |> list.map(get_next_in_sequence)
   |> int.sum
 }
