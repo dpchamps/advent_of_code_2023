@@ -2,6 +2,7 @@ import gleam/dict
 import gleam/result
 import gleam/list
 import gleam/option
+import gleam/set
 
 pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
   d
@@ -27,6 +28,13 @@ pub fn unwrap_panic(x: Result(a, b)) -> a {
   case x {
     Ok(r) -> r
     _ -> panic
+  }
+}
+
+pub fn unwrap_expect(x: Result(a, b), message: String) -> a {
+  case x {
+    Ok(r) -> r
+    _ -> panic(message)
   }
 }
 
@@ -127,6 +135,26 @@ pub fn list_split_on(l: List(a), splitter: fn(a) -> Bool) {
           |> list.append([el]),
           acc.2,
         )
+      }
+    },
+  )
+}
+
+/// Take all elements from set a that arent in set b
+pub fn set_subtraction(s_a: set.Set(a), s_b: set.Set(a)) -> set.Set(a) {
+  s_a
+  |> set.to_list
+  |> list.fold(
+    set.new(),
+    fn(acc, el) {
+      case
+        s_b
+        |> set.contains(el)
+      {
+        True -> acc
+        False ->
+          acc
+          |> set.insert(el)
       }
     },
   )

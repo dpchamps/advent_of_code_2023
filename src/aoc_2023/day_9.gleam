@@ -78,10 +78,7 @@ pub fn pt_1(input: String) {
 
 pub fn pt_2(input: String) {
   input
-  |> parse_histories(parse_history_line(fn(x: List(String)) {
-    x
-    |> list.reverse
-  }))
+  |> parse_histories(parse_history_line(list.reverse))
   |> list.map(get_next_in_sequence)
   |> int.sum
 }
