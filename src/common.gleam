@@ -3,6 +3,10 @@ import gleam/result
 import gleam/list
 import gleam/option
 import gleam/set
+import gleam/string
+import gleam/iterator
+import gleam/io
+import gleam/int
 
 pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
   d
@@ -34,7 +38,9 @@ pub fn unwrap_panic(x: Result(a, b)) -> a {
 pub fn unwrap_expect(x: Result(a, b), message: String) -> a {
   case x {
     Ok(r) -> r
-    _ -> panic(message)
+    _ ->
+      io.debug(message)
+      |> panic
   }
 }
 
@@ -157,5 +163,37 @@ pub fn set_subtraction(s_a: set.Set(a), s_b: set.Set(a)) -> set.Set(a) {
           |> set.insert(el)
       }
     },
+  )
+}
+
+pub fn parse_string_into_grid(input: String) -> List(List(String)) {
+  input
+  |> string.split("\n")
+  |> list.map(string.to_graphemes)
+}
+
+pub fn array_with_length(len: Int) -> List(Int) {
+  case len {
+    0 -> [0]
+    n ->
+      array_with_length(len - 1)
+      |> list.append([len])
+  }
+}
+
+pub type Coord {
+  Coord(x: Int, y: Int)
+}
+
+pub fn two_d_array_dims(in: List(List(a))) -> Coord {
+  Coord(
+    in
+    |> list.at(0)
+    |> unwrap_panic
+    |> list.length
+    |> int.subtract(1),
+    in
+    |> list.length
+    |> int.subtract(1),
   )
 }
