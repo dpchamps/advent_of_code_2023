@@ -8,6 +8,7 @@ import gleam/set
 import gleam/pair
 import gleam/iterator
 import gleam/result
+import search
 
 pub type Direction {
   North
@@ -303,7 +304,48 @@ fn plumb_pipe_map(pipe_map: PipeMap) -> #(Int, set.Set(Coord)) {
   )
 }
 
-fn flood_fill_bfs(
+fn get_neighbor_cells_with_inside_annotation(
+  coord: Coord,
+  inside_map: dict.Dict(Coord, List(Direction)),
+  current_island_inside_state: Bool,
+) {
+  [North, South, East, West]
+  |> list.map(fn(direction) {
+    let next_coord =
+      direction_of_coord(direction)
+      |> add_cord(coord)
+    let is_inside = case
+      inside_map
+      |> dict.get(next_coord)
+    {
+      Ok(inside_directions) -> {
+        let edge =
+          inside_directions
+          |> list.contains(
+            direction
+            |> opposite_direction,
+          )
+
+        case edge {
+          n if n == False && current_island_inside_state == True -> {
+            panic(
+              "Reached an impossible case where an island is both inside and outside",
+            )
+          }
+          _ -> #()
+        }
+
+        edge
+      }
+
+      _ -> False
+    }
+
+    #(next_coord, is_inside)
+  })
+}
+
+fn flood_fill_bfs_revised(
   avoid: set.Set(Coord),
   bounds: #(Coord, Coord),
   stack: List(Coord),
@@ -311,111 +353,51 @@ fn flood_fill_bfs(
   discovered: List(Coord),
   inside_map: dict.Dict(Coord, List(Direction)),
   is_inside: Bool,
-) -> #(List(Coord), Bool) {
-  case stack {
-    [coord, ..next_stack] -> {
-      case
-        visited
-        |> set.contains(coord)
-      {
-        True ->
-          flood_fill_bfs(
-            avoid,
-            bounds,
-            next_stack,
-            visited,
-            discovered,
-            inside_map,
-            is_inside,
-          )
-        False -> {
-          let updated_visited =
-            visited
-            |> set.insert(coord)
+) {
+  let on_step = fn(
+    stack: List(Coord),
+    coord: Coord,
+    state: #(List(Coord), Bool),
+  ) {
+    let #(discovered, is_inside) = state
 
-          let cardinal_dirs =
-            [North, South, East, West]
-            |> list.map(fn(direction) {
-              // place we're moving to
-              let next_coord =
-                direction_of_coord(direction)
-                |> add_cord(coord)
-              let is_inside = case
-                inside_map
-                |> dict.get(next_coord)
-              {
-                Ok(inside_directions) -> {
-                  let edge =
-                    inside_directions
-                    |> list.contains(
-                      direction
-                      |> opposite_direction,
-                    )
+    let neighbor_cells =
+      get_neighbor_cells_with_inside_annotation(coord, inside_map, is_inside)
 
-                  case edge {
-                    n if n == False && is_inside == True -> {
-                      panic(
-                        "Reached an impossible case where an island is both inside and outside",
-                      )
-                    }
-                    _ -> #()
-                  }
+    let next_is_inside =
+      neighbor_cells
+      |> list.fold(
+        False,
+        fn(acc, x) {
+          let #(_, found_inside) = x
 
-                  edge
-                }
+          acc || found_inside
+        },
+      )
 
-                _ -> False
-              }
-
-              #(next_coord, is_inside)
-            })
-
-          let next_is_inside =
-            cardinal_dirs
-            |> list.fold(
-              False,
-              fn(acc, x) {
-                let #(_, found_inside) = x
-
-                acc || found_inside
-              },
-            )
-
-          let updated_stack =
-            cardinal_dirs
-            |> list.filter(fn(next_tuple) {
-              let #(next_coord, _) = next_tuple
-              coord_in_bounds(bounds, next_coord) && !{
-                avoid
-                |> set.contains(next_coord)
-              }
-            })
-            |> list.map(pair.first)
-            |> fn(next_coords) {
-              stack
-              |> list.append(next_coords)
-            }
-
-          let updated_discovered =
-            discovered
-            |> list.append([coord])
-
-          flood_fill_bfs(
-            avoid,
-            bounds,
-            updated_stack,
-            updated_visited,
-            updated_discovered,
-            inside_map,
-            is_inside || next_is_inside,
-          )
+    let updated_stack =
+      neighbor_cells
+      |> list.filter(fn(next_tuple) {
+        let #(next_coord, _) = next_tuple
+        coord_in_bounds(bounds, next_coord) && !{
+          avoid
+          |> set.contains(next_coord)
         }
+      })
+      |> list.map(pair.first)
+      |> fn(next_coords) {
+        stack
+        |> list.append(next_coords)
       }
-    }
-    [] -> {
-      #(discovered, is_inside)
-    }
+
+    let updated_discovered =
+      discovered
+      |> list.append([coord])
+
+    #(updated_stack, #(updated_discovered, next_is_inside))
   }
+
+  search.bfs(stack, visited, #(discovered, is_inside), on_step)
 }
 
 fn flood_fill_islands(
@@ -428,7 +410,15 @@ fn flood_fill_islands(
     [] -> []
     [next, ..input] -> {
       let island =
-        flood_fill_bfs(avoid, bounds, [next], set.new(), [], inside_map, False)
+        flood_fill_bfs_revised(
+          avoid,
+          bounds,
+          [next],
+          set.new(),
+          [],
+          inside_map,
+          False,
+        )
       let next_input =
         input
         |> list.filter(fn(coord) {
