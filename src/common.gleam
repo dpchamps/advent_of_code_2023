@@ -22,6 +22,16 @@ pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
   }
 }
 
+pub fn update(
+  d: dict.Dict(a, b),
+  at: a,
+  update_fn: fn(b) -> b,
+) -> Result(dict.Dict(a, b), Nil) {
+  d
+  |> dict.get(at)
+  |> result.map(fn(v) { dict.insert(d, at, update_fn(v)) })
+}
+
 pub fn dict_entries(d: dict.Dict(a, b)) -> List(#(a, b)) {
   d
   |> dict.keys
