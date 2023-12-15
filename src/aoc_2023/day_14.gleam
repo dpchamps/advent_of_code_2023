@@ -290,6 +290,7 @@ fn run_cycle(
     )
 
   find_pattern(result)
+  |> pair.first
 }
 
 pub fn pt_1(input: String) {
