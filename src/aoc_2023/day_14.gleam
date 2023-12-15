@@ -1,16 +1,10 @@
 import gleam/int
 import gleam/list
-import gleam/string
 import common
 import gleam/io
 import gleam/dict
-import gleam/set
 import gleam/pair
 import gleam/iterator
-import gleam/result
-import gleam/regex
-import gleam/option
-import gleam/float
 
 pub type Direction {
   North
@@ -34,23 +28,6 @@ fn board_el_of_string(char: String) -> BoardElement {
     "O" -> RoundRock
     "." -> EmptySpace
   }
-}
-
-fn string_of_board_el(b: BoardElement) -> String {
-  case b {
-    CubeRock -> "#"
-    RoundRock -> "O"
-    EmptySpace -> "."
-  }
-}
-
-fn print_board(b: Board) {
-  b
-  |> list.map(fn(row) {
-    row
-    |> list.map(string_of_board_el)
-  })
-  |> common.print_grid_of_strings
 }
 
 fn parse_row_into_board_element(input: List(String)) -> List(BoardElement) {
@@ -328,5 +305,5 @@ pub fn pt_2(input: String) {
   input
   |> parse_board
   |> two_d_array_into_dict
-  |> run_cycle(500)
+  |> run_cycle(200)
 }
