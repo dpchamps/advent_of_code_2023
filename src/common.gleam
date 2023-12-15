@@ -22,6 +22,15 @@ pub fn upsert(d: dict.Dict(a, b), at: a, default: b, update_with: fn(b) -> b) {
   }
 }
 
+pub fn dict_entries(d: dict.Dict(a, b)) -> List(#(a, b)) {
+  d
+  |> dict.keys
+  |> list.zip(
+    d
+    |> dict.values,
+  )
+}
+
 pub const max_safe_int = 9_007_199_254_740_991
 
 pub fn identity(x: a) -> a {
@@ -119,6 +128,19 @@ pub fn list_insert_at(l: List(a), to_insert: a, idx: Int) -> List(a) {
   }
 }
 
+pub fn list_swap_in_idx(l: List(a), el: a, idx: Int) -> List(a) {
+  l
+  |> list.index_fold(
+    [],
+    fn(arr, a_el, a_idx) {
+      case idx == a_idx {
+        True -> list.append(arr, [el])
+        _ -> list.append(arr, [a_el])
+      }
+    },
+  )
+}
+
 pub fn list_split_on(l: List(a), splitter: fn(a) -> Bool) {
   l
   |> list.fold(
@@ -172,6 +194,24 @@ pub fn parse_string_into_grid(input: String) -> List(List(String)) {
   |> list.map(string.to_graphemes)
 }
 
+pub fn print_grid_of_strings(input: List(List(String))) {
+  input
+  |> list.each(fn(x) {
+    x
+    |> string.join("")
+    |> io.println
+  })
+}
+
+pub fn print_grid(input: List(List(String))) {
+  input
+  |> list_enumerate
+  |> list.each(fn(x) {
+    x
+    |> io.debug
+  })
+}
+
 pub fn array_with_length(len: Int) -> List(Int) {
   case len {
     0 -> [0]
@@ -180,6 +220,15 @@ pub fn array_with_length(len: Int) -> List(Int) {
       |> list.append([len])
   }
 }
+
+// pub fn array_with_length(len: Int) -> List(Int) {
+//   case len {
+//     0 -> [0]
+//     n ->
+//       array_with_length(len - 1)
+//       |> list.append([len])
+//   }
+// }
 
 pub type Coord {
   Coord(x: Int, y: Int)
@@ -196,4 +245,61 @@ pub fn two_d_array_dims(in: List(List(a))) -> Coord {
     |> list.length
     |> int.subtract(1),
   )
+}
+
+pub fn list_of_pair(x: #(a, a)) -> List(a) {
+  [x.0, x.1]
+}
+
+pub fn list_pop_top(x: List(a)) -> Result(#(a, List(a)), Nil) {
+  case x {
+    [head, ..tail] -> Ok(#(head, tail))
+    [] -> Error(Nil)
+  }
+}
+
+pub fn list_pop_back(x: List(a)) -> Result(#(a, List(a)), Nil) {
+  case list.split(x, list.length(x) - 1) {
+    #(list, [el]) -> Ok(#(el, list))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn rotate_matrix(input: List(List(a))) -> List(List(a)) {
+  let Coord(rows, _) = two_d_array_dims(input)
+  let base =
+    array_with_length(rows)
+    |> list.map(fn(_) { [] })
+  input
+  |> list.reverse
+  |> list.fold(
+    base,
+    fn(rotated, row) {
+      row
+      // |> list.reverse
+      |> list.index_fold(
+        rotated,
+        fn(acc, el, idx) {
+          let r = case list.at(acc, idx) {
+            Ok(arr) ->
+              arr
+              |> list.append([el])
+            _ -> [el]
+          }
+
+          list_swap_in_idx(acc, r, idx)
+        },
+      )
+    },
+  )
+}
+
+pub fn list_enumerate(input: List(a)) -> List(#(a, Int)) {
+  list.index_map(input, fn(i, x) { #(x, i) })
+}
+
+pub fn list_dedup(input: List(a)) -> List(a) {
+  input
+  |> set.from_list
+  |> set.to_list
 }
