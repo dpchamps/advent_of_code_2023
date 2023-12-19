@@ -3,13 +3,12 @@ import gleam/list
 import gleam/string
 import common
 import gleam/io
-import gleam/dict
-import gleam/set
 import gleam/pair
 import gleam/iterator
 import gleam/result
 import gleam/regex
 import gleam/option
+import gleam/dict
 
 pub type TextPos {
   TextPos(col: Int, length: Int)
@@ -185,6 +184,58 @@ fn lineup_choose_two(
   |> pair.first
 }
 
+fn keep_lineup(lineup: HotSpringLineUp) -> Bool {
+  // conditions where a lineup can be thrown away:
+  // 1. there are more contiguous broken springs then there are parity bits
+  //  1b. there are equal contiguous broken hot springs, but have a misalignment
+  // 2. there are not enough contiguous areas to fill
+  //    needs to account for the possibility that unknowns can be broken apart
+
+  let #(hotsprings, parity_bits) = lineup
+  let n_parity = list.length(parity_bits)
+  // solving part 1
+  let distint_possible_broken =
+    list.length(
+      list.chunk(hotsprings, fn(x) { is_damaged(x) || is_placeholder(x) })
+      |> list.filter(fn(chunk) { !list.all(chunk, is_placeholder) }),
+    ) <= n_parity
+
+  // solving part 1.b
+  let distinct_known_broken_contiguous = case
+    common.list_split_on(hotsprings, is_placeholder)
+  {
+    #(lhs, _, option.Some(_)) ->
+      list.chunk(lhs, is_damaged)
+      |> list.map(list.length)
+      |> list.zip(parity_bits)
+      |> list.all(fn(pair) { pair.0 == pair.1 })
+    _ -> True
+  }
+
+  // solving part 2
+  let enough_contiguous_areas = {
+    let x =
+      list.chunk(hotsprings, fn(x) { is_damaged(x) || is_placeholder(x) })
+      |> list.fold(
+        [],
+        fn(arr, chunk) {
+          case chunk {
+            [PlaceHolder(_), Damaged(_), ..] ->
+              list.append(
+                arr,
+                [[PlaceHolder(TextPos(0, 0)), Damaged(TextPos(0, 0))]],
+              )
+          }
+        },
+      )
+    list.length([]) >= n_parity
+
+    True
+  }
+
+  distint_possible_broken && distinct_known_broken_contiguous && enough_contiguous_areas
+}
+
 fn lineup_choose_maybe_two(
   hotspring_lineup: HotSpringLineUp,
 ) -> List(List(HotSpring)) {
@@ -193,7 +244,7 @@ fn lineup_choose_maybe_two(
   |> common.list_of_pair
   |> list.filter(fn(hotspring) {
     // is_possible_partial_lineup(#(hotspring, hotspring_lineup.1))
-    evaluate_potential_lineup(#(hotspring, hotspring_lineup.1))
+    keep_lineup(#(hotspring, hotspring_lineup.1))
   })
 }
 
@@ -537,12 +588,6 @@ fn solve_line_up(lineup: HotSpringLineUp) -> Int {
 }
 
 fn solve_line_slow(lineup: HotSpringLineUp) -> Int {
-  // io.debug(#(
-  //   "Solving",
-  //   lineup.0
-  //   |> hotspring_line_to_string,
-  //   lineup.1,
-  // ))
   let #(hotsprings, contiguous_chunks) = lineup
 
   case
@@ -570,39 +615,77 @@ fn solve_line_slow(lineup: HotSpringLineUp) -> Int {
   }
 }
 
+fn solve_line_up_with_cache(
+  lineup: HotSpringLineUp,
+  cache: dict.Dict(String, Int),
+) -> #(Int, dict.Dict(String, Int)) {
+  let #(hotsprings, contiguous_chunks) = lineup
+  let cache_key = hotspring_line_to_string(hotsprings)
+  case dict.get(cache, cache_key) {
+    Ok(value) -> #(value, cache)
+    _ -> {
+      case
+        hotsprings
+        |> list.all(fn(x) { !is_placeholder(x) })
+      {
+        True ->
+          case is_possible_lineup(lineup) {
+            True -> {
+              #(1, dict.insert(cache, cache_key, 1))
+            }
+            False -> #(0, dict.insert(cache, cache_key, 1))
+          }
+        False -> {
+          let #(next_left, next_right) = lineup_choose_two(hotsprings)
+          let #(lineup_left_result, _) =
+            solve_line_up_with_cache(#(next_left, contiguous_chunks), cache)
+          let #(lineup_right_result, _) =
+            solve_line_up_with_cache(#(next_right, contiguous_chunks), cache)
+
+          let result = lineup_left_result + lineup_right_result
+          let next_cache = dict.insert(cache, cache_key, result)
+          #(result, next_cache)
+        }
+      }
+    }
+  }
+}
+
+fn solve_line_cache(lineup: HotSpringLineUp) -> Int {
+  solve_line_up_with_cache(lineup, dict.new())
+  |> pair.first
+}
+
+fn solve_lineup_cached(lineups: List(HotSpringLineUp)) -> Int {
+  lineups
+  |> list.fold(
+    #(0, dict.new()),
+    fn(state, lineup) {
+      let #(total, cache) = state
+      let #(solutions, next_cache) = solve_line_up_with_cache(lineup, cache)
+
+      #(total + solutions, next_cache)
+    },
+  )
+  |> pair.first
+}
+
 pub fn pt_1(input: String) {
   input
   |> parse_top_level_input
-  |> list.index_map(fn(idx, x) {
-    // io.debug("-----------------------------")
-    let result = solve_line_up(x)
-    let compare = solve_line_slow(x)
-    io.println(string.inspect(#(
-      "Total Count: ",
-      result,
-      "Idx: ",
-      idx,
-      "Compare: ",
-      compare,
-    )))
-    case result != compare {
-      True -> {
-        io.println(hotspring_line_to_string(x.0))
-        panic
-      }
-      False -> #()
-    }
-    result
-  })
-  // |> list.each(io.debug)
+  // |> solve_lineup_cached
+  |> list.map(solve_line_cache)
   |> int.sum
 }
 
 pub fn pt_2(input: String) {
   todo
+  // todo
   // input
   // |> parse_top_level_input
   // |> list.map(unfold_input)
+  // |> list.map(solve_line_cache)
+  // |> int.sum
   // |> list.index_map(fn(idx, x) {
   //   // io.debug("-----------------------------")
   //   let result = solve_line_up(x)

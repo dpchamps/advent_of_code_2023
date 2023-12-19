@@ -156,8 +156,8 @@ pub fn list_split_on(l: List(a), splitter: fn(a) -> Bool) {
   |> list.fold(
     #([], [], option.None),
     fn(acc, el) {
-      case acc.1 {
-        [] ->
+      case acc.2 {
+        option.None ->
           case splitter(el) {
             True -> #(acc.0, [], option.Some(el))
             False -> #(
@@ -312,4 +312,25 @@ pub fn list_dedup(input: List(a)) -> List(a) {
   input
   |> set.from_list
   |> set.to_list
+}
+
+pub fn dict_two_d_array_into_map(input: List(List(a))) -> dict.Dict(Coord, a) {
+  input
+  |> list.index_fold(
+    dict.new(),
+    fn(map, row, y) {
+      row
+      |> list.index_fold(
+        map,
+        fn(map, el, x) { dict.insert(map, Coord(x, y), el) },
+      )
+    },
+  )
+}
+
+pub fn list_at_coord(input: List(List(a)), coord: Coord) -> Result(a, Nil) {
+  case list.at(input, coord.y) {
+    Ok(row) -> list.at(row, coord.x)
+    Error(_) -> Error(Nil)
+  }
 }
