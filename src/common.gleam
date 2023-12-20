@@ -334,3 +334,20 @@ pub fn list_at_coord(input: List(List(a)), coord: Coord) -> Result(a, Nil) {
     Error(_) -> Error(Nil)
   }
 }
+
+pub fn unreachable(message: String) {
+  io.println_error("UNREACHABLE: " <> message)
+  panic
+}
+
+pub fn dict_pretty_print(input: dict.Dict(a, b)) -> dict.Dict(a, b) {
+  io.println("{")
+  dict_entries(input)
+  |> list.each(fn(entry) {
+    io.println(
+      "\t" <> string.inspect(entry.0) <> " : " <> string.inspect(entry.1),
+    )
+  })
+  io.println("}")
+  input
+}
