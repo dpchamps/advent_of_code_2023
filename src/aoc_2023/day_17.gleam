@@ -7,6 +7,14 @@ import gleam/set
 import gleam/dict
 import gleam/result
 import direction
+import priority_queue
+
+type CoordState =
+  #(common.Coord, direction.Direction, Int, List(common.Coord), Int)
+
+fn compare_coord_state(a: CoordState, b: CoordState) {
+  int.compare(a.2, b.2)
+}
 
 fn parse_input_into_board(input: String) -> List(List(Int)) {
   input
@@ -121,20 +129,21 @@ fn print_path(path: List(common.Coord), bounds: common.Coord) {
 
 fn find_shortest_path(
   map: List(List(Int)),
-  queue: List(
-    #(common.Coord, direction.Direction, Int, List(common.Coord), Int),
-  ),
+  queue: priority_queue.PriorityQueue(CoordState),
   c_e_tree: dict.Dict(common.Coord, Int),
   goal: common.Coord,
   checking: set.Set(#(common.Coord, direction.Direction, Int)),
   min_max_steps: common.Coord,
 ) {
-  case queue {
-    [] -> c_e_tree
-    [root, ..remaining_queue] -> {
+  case priority_queue.dequeue(queue) {
+    Ok(#(root, remaining_queue)) -> {
       let #(current_coord, current_direction, current_heat_cost, path, _) = root
 
-      io.print("Heating UP: " <> string.inspect(current_heat_cost) <> "\r")
+      io.print(
+        "Heating UP: " <> string.inspect(current_heat_cost) <> " " <> string.inspect(priority_queue.queue_size(
+          remaining_queue,
+        )) <> "\r",
+      )
 
       let next_c_e_tree =
         common.upsert(
@@ -177,19 +186,13 @@ fn find_shortest_path(
                 set.insert(checking_fold, #(el.0, el.1, el.4))
               },
             )
-          let next_queue = list.append(remaining_queue, next_directions)
 
-          let rebalenced_queue =
-            next_queue
-            |> list.sort(fn(a, b) {
-              case int.compare(a.2, b.2) {
-                g -> g
-              }
-            })
+          let next_queue =
+            priority_queue.add_list(remaining_queue, next_directions)
 
           find_shortest_path(
             map,
-            rebalenced_queue,
+            next_queue,
             next_c_e_tree,
             goal,
             next_checking,
@@ -198,6 +201,8 @@ fn find_shortest_path(
         }
       }
     }
+
+    Error(_) -> c_e_tree
   }
 }
 
@@ -207,7 +212,10 @@ fn find_best_lava_path(
   min_max_steps: common.Coord,
 ) -> Int {
   let bounds = common.two_d_array_dims(map)
-  let start = list.map(start, fn(item) { #(item.0, item.1, 0, [], 0) })
+  let start =
+    list.map(start, fn(item) { #(item.0, item.1, 0, [], 0) })
+    |> priority_queue.from_list(compare_coord_state)
+
   let result =
     find_shortest_path(map, start, dict.new(), bounds, set.new(), min_max_steps)
 
@@ -217,6 +225,7 @@ fn find_best_lava_path(
 
 pub fn pt_1(input: String) {
   todo
+  // todo
   // input
   // |> parse_input_into_board
   // |> find_best_lava_path(
